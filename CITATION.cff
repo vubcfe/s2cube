@@ -4,6 +4,7 @@ title: "s2cube: a Python toolkit for building co-registered, leakage-safe Sentin
 version: 0.1.0
 date-released: 2026-10-08
 license: MIT
+doi: 10.5281/zenodo.23240761
 repository-code: "https://github.com/vubcfe/s2cube"
 keywords: [Sentinel-2, remote sensing, satellite image time series, co-registration, spatial cross-validation, machine learning, STAC]
 authors:
