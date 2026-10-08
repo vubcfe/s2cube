@@ -1,0 +1,46 @@
+# Case study 2: smallholder crops under persistent cloud, Busia/Siaya (western Kenya), 2019.
+# Labels: PlantVillage ground-reference field polygons (CC BY-SA 4.0), sparse (surveyed fields only).
+#
+#   python get_labels.py           # -> kenya_fields.geojson (319 fields)
+#   s2cube build project.yaml && s2cube coreg project.yaml && s2cube labels project.yaml \
+#     && s2cube splits project.yaml && s2cube info project.yaml
+name: kenya-busia-2019
+start: 2019-01-01
+end: 2019-12-31
+source: planetary-computer
+bands: [B02, B03, B04, B05, B06, B07, B08, B8A, B11, B12]
+res: 10
+crs: auto                        # -> EPSG:32636 (UTM 36N)
+output: cube.h5
+workers: 6
+
+sites:
+  from_labels: true
+  tile_m: 600
+  min_cover: 0.01                # sparse labels: keep every tile with a surveyed field
+  seed: 0
+
+unlabeled:
+  n: 60
+  win_px: 64
+  buffer_m: 500
+
+labels:
+  path: kenya_fields.geojson
+  class_field: Crop1
+  class_map: {Maize: 1, Cassava: 2, Fallowland: 3, Millet: 4, Groundnut: 5}
+  unmapped: ignore
+  annotated: labels              # only pixels inside surveyed fields carry a label
+  purity: 0.7
+  block_px: 6
+  block_min_labelled: 0.1        # sparse labels: a block enters label budgets if 10 % is labelled
+
+splits:
+  k: 5
+  link_m: 1000
+  min_gap_m: 1000
+  ratios: [0.1, 0.5, 1.0]
+  seeds: [0, 1, 2]
+
+coreg:
+  reference: self

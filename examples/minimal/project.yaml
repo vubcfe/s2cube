@@ -1,0 +1,44 @@
+# Minimal end-to-end example (a few minutes, ~150 MB of downloads): four 600 m sites in
+# Flevoland, the Netherlands, May-June 2025, crop labels from the public BRP parcel register.
+#
+#   python ../netherlands/get_labels.py --bbox 5.60 52.50 5.68 52.55 --out brp.geojson
+#   s2cube plan project.yaml && s2cube build project.yaml && s2cube coreg project.yaml
+#   s2cube labels project.yaml && s2cube splits project.yaml && s2cube info project.yaml
+name: minimal
+start: 2025-05-01
+end: 2025-06-30
+source: planetary-computer       # or: earth-search
+bands: [B02, B03, B04, B08, B11, B12]
+res: 10
+crs: auto
+output: cube.h5
+
+sites:
+  from_labels: true
+  tile_m: 600
+  min_cover: 0.6
+  max_sites: 4
+  seed: 0
+
+unlabeled:
+  n: 8
+  win_px: 32
+  buffer_m: 300
+
+labels:
+  path: brp.geojson
+  class_field: gewas
+  class_map: {"Tarwe, winter-": 1, "Aardappelen, consumptie": 2, "Bieten, suiker-": 3, "Uien, gele zaai-": 4}
+  unmapped: ignore
+  block_px: 10
+
+splits:
+  k: 3
+  link_m: 500
+  min_gap_m: 500
+  ratios: [0.25, 0.5, 1.0]
+  seeds: [0]
+
+coreg:
+  reference: self
+  self_dates: 5

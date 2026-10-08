@@ -1,0 +1,73 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "s2cube"
+dynamic = ["version"]
+description = "Build co-registered, leakage-safe Sentinel-2 time-series datasets for machine learning"
+readme = "README.md"
+license = { file = "LICENSE.txt" }
+authors = [{ name = "Cao Vu Bui", email = "vubc@fpt.edu.vn" }]
+requires-python = ">=3.9"
+keywords = ["Sentinel-2", "remote sensing", "time series", "co-registration",
+            "machine learning", "spatial cross-validation", "STAC", "dataset"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: GIS",
+    "Topic :: Scientific/Engineering :: Image Processing",
+]
+dependencies = [
+    "numpy>=1.22",
+    "scipy>=1.8",
+    "h5py>=3.6",
+    "rasterio>=1.3",
+    "shapely>=2.0",
+    "requests>=2.25",
+    "pyyaml>=5.4",
+    "pillow>=9.0",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=7"]
+docs = ["mkdocs>=1.5", "mkdocs-material>=9", "mkdocstrings[python]>=0.24"]
+dev = ["s2cube[test,docs]", "ruff>=0.4", "build", "twine"]
+
+[project.scripts]
+s2cube = "s2cube.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/vubcfe/s2cube"
+Documentation = "https://s2cube.readthedocs.io"
+Issues = "https://github.com/vubcfe/s2cube/issues"
+
+[tool.setuptools.dynamic]
+version = { attr = "s2cube._version.__version__" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["network: needs internet access to a public STAC catalogue (deselect with -m 'not network')"]
+addopts = "-m 'not network'"
+
+[tool.ruff]
+line-length = 120
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = ["E741"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["s2cube"]
+known-local-folder = ["conftest"]

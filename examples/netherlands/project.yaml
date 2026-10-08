@@ -1,0 +1,58 @@
+# Case study 1: multi-class crop mapping in Flevoland, the Netherlands, 2025.
+# Labels: BRP Gewaspercelen (RVO, public domain), wall-to-wall agricultural parcels.
+#
+#   python get_labels.py           # -> brp.geojson (~7700 parcels)
+#   s2cube build project.yaml && s2cube coreg project.yaml && s2cube labels project.yaml \
+#     && s2cube splits project.yaml && s2cube info project.yaml
+name: netherlands-flevoland-2025
+start: 2025-01-01
+end: 2025-12-31
+source: planetary-computer
+bands: [B02, B03, B04, B05, B06, B07, B08, B8A, B11, B12]
+res: 10
+crs: auto                        # -> EPSG:32631 (UTM 31N)
+output: cube.h5
+workers: 6
+
+sites:
+  from_labels: true              # 1 km tiles over the parcels ...
+  tile_m: 1020
+  min_cover: 0.5                 # ... that are at least half agricultural
+  max_sites: 24                  # random subset (seeded)
+  seed: 0
+
+unlabeled:
+  n: 60
+  win_px: 64
+  buffer_m: 300
+
+labels:
+  path: brp.geojson
+  class_field: gewas
+  class_map:
+    "Tarwe, winter-": 1                  # winter wheat
+    "Gerst, winter-": 1
+    "Aardappelen, consumptie": 2         # potato
+    "Aardappelen, poot NAK": 2
+    "Bieten, suiker-": 3                 # sugar beet
+    "Uien, gele zaai-": 4                # onion
+    "Uien, rode zaai-": 4
+    "Grasland, tijdelijk": 5             # grassland
+    "Grasland, blijvend": 5
+    "Tulp, bloembollen en -knollen": 6   # tulip
+    "Winterpeen, productie": 7           # carrot
+    "Mais, snij-": 8                     # maize
+  unmapped: ignore               # other crops and landscape elements -> 255
+  annotated: sites               # parcels are wall-to-wall: unlabelled land is background (0)
+  purity: 0.7
+  block_px: 10
+
+splits:
+  k: 5
+  link_m: 1000
+  min_gap_m: 1000
+  ratios: [0.05, 0.1, 0.5, 1.0]
+  seeds: [0, 1, 2]
+
+coreg:
+  reference: self

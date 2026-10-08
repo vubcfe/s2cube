@@ -1,0 +1,23 @@
+site_name: s2cube
+site_description: Co-registered, leakage-safe Sentinel-2 time-series datasets for machine learning
+repo_url: https://github.com/vubcfe/s2cube
+theme:
+  name: material
+nav:
+  - Home: index.md
+  - Installation: installation.md
+  - Tutorial: tutorial.md
+  - Configuration: configuration.md
+  - Data format: data_format.md
+  - Methods: methods.md
+  - API: api.md
+  - FAQ: faq.md
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+          options:
+            docstring_style: numpy
+            show_source: false

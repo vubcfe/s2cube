@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+site/
+.pytest_cache/
+.ruff_cache/
+.venv/
+# data products
+*.h5
+*.orig.h5
+xyz_cache/
+coreg_*.csv
+dates.csv
+splits.json
+MANIFEST.sha256
