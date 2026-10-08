@@ -5,6 +5,7 @@
 [![tests](https://github.com/vubcfe/s2cube/actions/workflows/tests.yml/badge.svg)](https://github.com/vubcfe/s2cube/actions/workflows/tests.yml)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23240761.svg)](https://doi.org/10.5281/zenodo.23240761)
 [![docs](https://readthedocs.org/projects/s2cube/badge/?version=stable)](https://s2cube.readthedocs.io/en/stable/)
+[![PyPI](https://img.shields.io/pypi/v/s2cube.svg)](https://pypi.org/project/s2cube/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE.txt)
 
 `s2cube` turns a list of field sites and label polygons into an analysis-ready Sentinel-2 L2A
@@ -26,7 +27,7 @@ satellite image time series and need the dataset to be **correct**, **reproducib
 ## Installation
 
 ```bash
-pip install s2cube                       # from PyPI (after release)
+pip install s2cube                       # from PyPI
 # or, from source
 git clone https://github.com/vubcfe/s2cube && cd s2cube
 pip install -e ".[test]"
