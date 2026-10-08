@@ -38,7 +38,7 @@ dependencies = [
 
 [project.optional-dependencies]
 test = ["pytest>=7"]
-docs = ["mkdocs>=1.5", "mkdocs-material>=9", "mkdocstrings[python]>=0.24"]
+docs = ["mkdocs>=1.5,<2", "mkdocs-material>=9,<10", "mkdocstrings[python]>=0.24"]
 dev = ["s2cube[test,docs]", "ruff>=0.4", "build", "twine"]
 
 [project.scripts]
