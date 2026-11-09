@@ -10,6 +10,7 @@ nav:
   - Configuration: configuration.md
   - Data format: data_format.md
   - Methods: methods.md
+  - Recommended settings: settings.md
   - API: api.md
   - FAQ: faq.md
 plugins:

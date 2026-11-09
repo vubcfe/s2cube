@@ -8,6 +8,13 @@ sites closer than ``link_m`` are merged into clusters (single linkage on edge-to
 distance), whole clusters are distributed over ``k`` folds, and each fold is checked to keep
 test and validation sites at least ``min_gap_m`` away from every training site.
 
+When the data are one contiguous area, whole sites cannot be separated. ``strategy: patches``
+then splits inside the sites, following the patch-based benchmarks of Nalepa et al. (2019): square
+patches of label blocks go to folds at random, and patches should be at least as large as the
+neighbourhood a model reads. As in Tulczyjew et al. (2023), who exclude pixels at the border between
+the sets, training blocks within ``patch_guard_blocks`` of a test or validation block are dropped.
+The guaranteed gap is only ``patch_guard_blocks`` blocks wide, so this is weaker than separating sites.
+
 For label-efficiency experiments, training blocks are ordered once per seed by stratified
 shuffling on their positive fraction; every budget is a prefix of that order, so the 5 %
 subset is contained in the 10 % subset and so on (nested subsets), which removes sampling
@@ -79,6 +86,39 @@ def make_folds(geoms: dict, k: int, link_m: float, min_gap_m: float, weights=Non
     return out
 
 
+def patch_folds(grids: dict, present, k: int, patch_blocks: int, guard: int, seed: int = 0) -> list[dict]:
+    """k folds of block keys ``"site:block"`` from random square patches of blocks.
+
+    ``grids`` maps a site to its block grid (rows, columns); ``present`` holds the blocks that may
+    be used. Fold i tests on patch group i and validates on group i+1. It trains on the remaining
+    groups, without blocks closer than ``guard`` + 1 blocks (Chebyshev) to a test or validation block.
+    """
+    patches: dict = {}
+    for key in sorted(present):
+        sid, b = key.split(":")
+        r, c = divmod(int(b), grids[sid][1])
+        patches.setdefault((sid, r // patch_blocks, c // patch_blocks), []).append((r, c, key))
+    if len(patches) < k:
+        raise ValueError(f"only {len(patches)} patch(es) for k={k} folds; lower splits.k or splits.patch_blocks")
+    order = sorted(patches)
+    np.random.default_rng(seed).shuffle(order)
+    groups: list[list] = [[] for _ in range(k)]
+    for i, pid in enumerate(order):
+        groups[i % k] += [(pid[0], *cell) for cell in patches[pid]]
+    out = []
+    for i in range(k):
+        test, val = groups[i], groups[(i + 1) % k]
+        held = {(s, r + dr, c + dc) for s, r, c, _ in test + val
+                for dr in range(-guard, guard + 1) for dc in range(-guard, guard + 1)}
+        rest = [b for j, g in enumerate(groups) if j not in (i, (i + 1) % k) for b in g]
+        train = [b for b in rest if b[:3] not in held]
+        role = {"test": test, "val": val, "train": train}
+        out.append({"fold": i, **{r: sorted({b[0] for b in v}) for r, v in role.items()},
+                    "blocks": {r: sorted(b[3] for b in v) for r, v in role.items()},
+                    "n_guard_dropped": len(rest) - len(train)})
+    return out
+
+
 def stratified_order(items: list[str], values: np.ndarray, rng, strata: int = 4) -> list[str]:
     """Shuffle within quantile strata of ``values`` and interleave the strata."""
     if not items:
@@ -118,7 +158,9 @@ def build_splits(cfg: Config, cube_path=None, labels_path=None, out_path=None, l
     with Cube(cube_path) as c:
         geoms = site_boxes(c)
         windows = [w.geometry for w in c.windows]
-    block_frac, weights, eligible = {}, None, None
+    if sc.strategy not in ("sites", "patches"):
+        raise ValueError(f"splits.strategy must be 'sites' or 'patches', not {sc.strategy!r}")
+    block_frac, weights, eligible, grids = {}, None, None, {}
     if labels_path and labels_path.exists():
         import h5py
 
@@ -126,10 +168,29 @@ def build_splits(cfg: Config, cube_path=None, labels_path=None, out_path=None, l
             block_frac = json.loads(f.attrs["block_positive_fraction"])
             counts = json.loads(f.attrs["pixel_counts"])
             lab = json.loads(f.attrs.get("block_labelled_fraction", "{}"))
-        weights = {s: float(sum(v for k, v in counts[s].items() if k != "255")) for s in counts}
-        eligible = {b for b, v in lab.items() if v >= cfg.labels.block_min_labelled} if lab else None
-    folds = make_folds(geoms, sc.k, sc.link_m, sc.min_gap_m, weights)
-    subsets = {str(f["fold"]): nested_subsets(block_frac, f["train"], sc.ratios, sc.seeds, sc.strata, eligible)
+            weights = {s: float(sum(v for k, v in counts[s].items() if k != "255")) for s in counts}
+            eligible = {b for b, v in lab.items() if v >= cfg.labels.block_min_labelled} if lab else None
+            for sid in counts:
+                h, w = f[f"{sid}/block"].shape
+                grids[sid] = (math.ceil(h / cfg.labels.block_px), math.ceil(w / cfg.labels.block_px))
+    if sc.strategy == "patches":
+        if not block_frac:
+            raise ValueError("splits.strategy: patches needs labels.h5; run `s2cube labels` first")
+        folds = patch_folds(grids, set(block_frac), sc.k, sc.patch_blocks, sc.patch_guard_blocks, sc.seeds[0])
+        gap_m = sc.patch_guard_blocks * cfg.labels.block_px * cfg.res
+        for f in folds:
+            f["min_gap_m"] = float(gap_m)
+    else:
+        folds = make_folds(geoms, sc.k, sc.link_m, sc.min_gap_m, weights)
+
+    def allowed(f):
+        if "blocks" not in f:
+            return eligible
+        train = set(f["blocks"]["train"])
+        return train if eligible is None else train & eligible
+
+    subsets = {str(f["fold"]): nested_subsets(block_frac, f["train"], sc.ratios, sc.seeds, sc.strata,
+                                              allowed(f))
                for f in folds} if block_frac else {}
     if block_frac:
         empty = [f["fold"] for f in folds if not subsets[str(f["fold"])][str(sc.seeds[0])][str(max(sc.ratios))]]
@@ -137,10 +198,13 @@ def build_splits(cfg: Config, cube_path=None, labels_path=None, out_path=None, l
             raise ValueError(f"fold(s) {empty} have no training block with at least "
                              f"{cfg.labels.block_min_labelled:.0%} labelled pixels; lower labels.block_min_labelled")
         for f in folds:
-            f["n_blocks"] = {r: sum(1 for b in block_frac if b.split(":")[0] in f[r]) for r in ("train", "val", "test")}
+            f["n_blocks"] = {r: len(f["blocks"][r]) if "blocks" in f
+                             else sum(1 for b in block_frac if b.split(":")[0] in f[r])
+                             for r in ("train", "val", "test")}
     win_gap = min((w.distance(g) for w in windows for g in geoms.values()), default=None)
     doc = {"s2cube_version": __version__, "created": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-           "k": sc.k, "link_m": sc.link_m, "min_gap_m": sc.min_gap_m, "ratios": sorted(sc.ratios),
+           "strategy": sc.strategy, "k": sc.k, "link_m": sc.link_m, "min_gap_m": sc.min_gap_m,
+           "ratios": sorted(sc.ratios),
            "seeds": sc.seeds, "block_px": cfg.labels.block_px, "block_min_labelled": cfg.labels.block_min_labelled,
            "folds": folds, "subsets": subsets,
            "checks": {"min_test_train_gap_m": min(f["min_gap_m"] for f in folds),

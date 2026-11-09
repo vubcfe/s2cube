@@ -57,6 +57,9 @@ splits:
   k: 5                        # folds (>= 3)
   link_m: 1000                # sites closer than this are kept together
   min_gap_m: 1000             # required test/val to train gap (checked)
+  strategy: sites             # sites | patches (patches split inside sites; see below)
+  patch_blocks: 4             # patches: side of a patch, in label blocks
+  patch_guard_blocks: 1       # patches: rings of blocks dropped from training around test/val
   ratios: [0.05, 0.1, 0.5, 1.0]
   seeds: [0, 1, 2]
   strata: 4                   # quantile strata of positive fraction for budget sampling

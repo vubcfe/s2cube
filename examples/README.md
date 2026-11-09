@@ -6,7 +6,10 @@
 | `netherlands/` | Flevoland (NL), 2025 | BRP parcels, 8 crop classes, wall-to-wall | multi-class labels, sites tiled from labels, spatial folds | ~170 dates |
 | `kenya/` | Busia/Siaya (Kenya), 2019 | PlantVillage field survey (CC BY-SA 4.0), 5 classes, sparse | persistent cloud, sparse labels, pre-2022 processing baseline | ~73 dates |
 
-Each folder has a `get_labels.py` that downloads the reference polygons from their publisher
+| `downstream/` | the two case studies | as above | classification on corrected and uncorrected cubes, sensitivity checks | see its README |
+| `drift/` | Flevoland (NL), 2024-2025 | BRP 2024 and 2025 | the label drift check against real parcel changes | ~73 dates, 2 bands |
+
+The case-study folders have a `get_labels.py` that downloads the reference polygons from their publisher
 (they are not redistributed here), and a `project.yaml`:
 
 ```bash

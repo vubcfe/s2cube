@@ -29,6 +29,17 @@ def built(project, scenes):
     return cfg, path, scenes
 
 
+def test_build_without_windows(project, scenes):
+    cfg = Config.load(project / "project.yaml")
+    cfg.unlabeled.n, cfg.output = 0, "cube_no_windows.h5"
+    p = plan(cfg)
+    assert not p.windows
+    path = create(cfg, p, stac.group_by_date(scenes["items"], p.crs.to_epsg()))
+    assert fetch(path, log=lambda *_: None) == list(range(len(DATES)))
+    with Cube(path) as c:
+        assert c.windows == [] and c.site(c.sites[0])[0].any()
+
+
 def test_plan_grids(project):
     cfg = Config.load(project / "project.yaml")
     p = plan(cfg)
@@ -129,6 +140,18 @@ def test_labels_splits_datasets_manifest(built, project):
     assert X.shape == (len(DATES), len(BANDS), 10, 10) and y.shape == (10, 10) and valid.dtype == bool
     full = LabeledBlocks(path, lp, sp, fold=0, role="train", ratio=1.0, seed=0)
     assert len(ds) <= len(full)
+    cfg.splits.strategy, cfg.splits.patch_blocks = "patches", 2
+    pp = build_splits(cfg, out_path=project / "splits_patches.json", log=lambda *_: None)
+    pdoc = json.loads(open(pp).read())
+    assert pdoc["strategy"] == "patches" and pdoc["checks"]["nested"]
+    for f in pdoc["folds"]:
+        assert not set(f["blocks"]["train"]) & (set(f["blocks"]["test"]) | set(f["blocks"]["val"]))
+        assert f["min_gap_m"] == 100
+    test = LabeledBlocks(path, lp, pp, fold=0, role="test")
+    assert len(test) == len(pdoc["folds"][0]["blocks"]["test"]) > 0
+    budget = pdoc["subsets"]["0"]["0"]["1.0"]
+    assert set(budget) <= set(pdoc["folds"][0]["blocks"]["train"])
+    cfg.splits.strategy = "sites"
     uw = UnlabeledWindows(path)
     assert len(uw) == 4 and uw[0][0].shape == (len(DATES), len(BANDS), 16, 16)
 

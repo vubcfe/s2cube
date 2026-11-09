@@ -89,6 +89,7 @@ Online: **https://s2cube.readthedocs.io**
 * [Configuration reference](docs/configuration.md)
 * [Data format](docs/data_format.md)
 * [Methods](docs/methods.md) (co-registration, label drift, spatial splits)
+* [Recommended settings](docs/settings.md)
 * [API reference](docs/api.md)
 * [Limitations and FAQ](docs/faq.md)
 

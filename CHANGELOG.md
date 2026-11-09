@@ -2,6 +2,15 @@
 
 All notable changes are documented here. The project follows [Semantic Versioning](https://semver.org).
 
+## [0.2.0] - 2026-11-09
+
+- `splits.strategy: patches` splits inside sites for data from one contiguous area, with
+  `patch_blocks` and `patch_guard_blocks`.
+- Fixed `s2cube build` crashing when `unlabeled.n` is 0, the default.
+- `examples/downstream`: classification and sensitivity experiments. `examples/drift`: test of the
+  label drift check against real parcel changes.
+- New documentation page with recommended settings.
+
 ## [0.1.0] - 2026-10-08
 
 First public release.

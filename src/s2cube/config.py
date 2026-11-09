@@ -62,6 +62,9 @@ class SplitsConfig:
     k: int = 5
     link_m: float = 1000.0           # sites closer than this end up in the same cluster/fold
     min_gap_m: float = 1000.0        # required gap between test/val sites and train sites
+    strategy: str = "sites"          # "sites": whole clusters of sites; "patches": patches inside sites
+    patch_blocks: int = 4            # patches: side of a patch, in label blocks
+    patch_guard_blocks: int = 1      # patches: rings of blocks dropped from training around test/val
     ratios: list = field(default_factory=lambda: [0.05, 0.1, 0.5, 1.0])
     seeds: list = field(default_factory=lambda: [0, 1, 2])
     strata: int = 4

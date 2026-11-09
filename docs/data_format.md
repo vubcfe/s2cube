@@ -54,3 +54,8 @@ Attributes: `classes`, `purity`, `periods`, `block_positive_fraction` (JSON), `p
 
 Block ids are `"<site>:<block>"`. `subsets[fold][seed][ratio]` lists training blocks; smaller
 budgets are subsets of larger ones.
+
+With `strategy: patches`, each fold also has `blocks` (`{"train": [...], "val": [...], "test": [...]}`)
+and `n_guard_dropped`, the training blocks removed next to test and validation blocks. The lists
+`test`, `val` and `train` then name the sites touched by each role, and a site can appear in several.
+`min_gap_m` is the width of the guard, not a distance between sites.

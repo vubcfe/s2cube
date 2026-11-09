@@ -166,6 +166,32 @@ def test_clusters_and_folds_respect_gap():
         splits.make_folds(geoms, 5, 500, 500)
 
 
+def test_patch_folds():
+    grids = {"a": (8, 8), "b": (8, 8)}
+    present = {f"{s}:{b}" for s in grids for b in range(64)}
+    folds = splits.patch_folds(grids, present, 4, 2, 1, seed=0)
+    assert folds == splits.patch_folds(grids, present, 4, 2, 1, seed=0)
+    for f in folds:
+        blocks = f["blocks"]
+        assert not set(blocks["train"]) & (set(blocks["test"]) | set(blocks["val"]))
+        assert not set(blocks["test"]) & set(blocks["val"])
+        assert f["n_guard_dropped"] > 0
+        held = [k for r in ("test", "val") for k in blocks[r]]
+        for t in blocks["train"]:
+            ts, tb = t.split(":")
+            for h in held:
+                hs, hb = h.split(":")
+                if ts == hs:
+                    tr, tc = divmod(int(tb), 8)
+                    hr, hc = divmod(int(hb), 8)
+                    assert max(abs(tr - hr), abs(tc - hc)) > 1
+    assert sorted(k for f in folds for k in f["blocks"]["test"]) == sorted(present)
+    no_guard = splits.patch_folds(grids, present, 4, 2, 0, seed=0)
+    assert all(f["n_guard_dropped"] == 0 for f in no_guard)
+    with pytest.raises(ValueError):
+        splits.patch_folds({"a": (2, 2)}, {f"a:{b}" for b in range(4)}, 4, 2, 1)
+
+
 def test_nested_subsets():
     bf = {f"s{i % 3}:{i}": (i % 10) / 10 for i in range(60)}
     sub = splits.nested_subsets(bf, ["s0", "s1"], [0.05, 0.1, 0.5, 1.0], [0, 1])

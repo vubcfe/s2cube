@@ -1,0 +1,23 @@
+# Drift check: grassland parcels drawn in 2024 and reused in 2025, against the 2025 parcel register.
+name: drift-flevoland-grass
+start: 2024-04-01
+end: 2025-10-31
+source: planetary-computer
+bands: [B04, B08]
+res: 10
+crs: auto
+output: cube.h5
+workers: 6
+max_cloud: 40
+sites:
+  from_labels: true
+  tile_m: 1020
+  min_cover: 0.02
+  seed: 0
+labels:
+  path: grass2024.geojson
+  annotated: labels
+  purity: 0.7
+  block_px: 10
+  drift: true
+  drift_months: [5, 6, 7, 8, 9]

@@ -166,9 +166,10 @@ def create(cfg: Config, p: Plan, items_by_date: dict, path=None) -> str:
         N = len(p.windows)
         ug["origin"] = np.array([(g.x0, g.y1) for g in p.windows], "f8").reshape(N, 2)
         ug.attrs.update(win_px=w, buffer_m=cfg.unlabeled.buffer_m, seed=cfg.unlabeled.seed)
-        ug.create_dataset("X", (N, T, B, w, w), np.uint16, chunks=(1, 1, B, w, w),
-                          compression="gzip", compression_opts=4, shuffle=True)
-        ug.create_dataset("SCL", (N, T, w, w), np.uint8, chunks=(1, 1, w, w), compression="gzip")
+        packed = {"compression": "gzip"} if N else {}     # HDF5 cannot chunk an empty dataset
+        ug.create_dataset("X", (N, T, B, w, w), np.uint16, chunks=(1, 1, B, w, w) if N else None,
+                          shuffle=bool(N), **packed)
+        ug.create_dataset("SCL", (N, T, w, w), np.uint8, chunks=(1, 1, w, w) if N else None, **packed)
         q = f.create_group("qa")
         q.attrs["clear_scl"] = list(CLEAR_SCL)
         q.create_dataset("site_valid", (T, len(p.sites)), "f4", fillvalue=np.nan)

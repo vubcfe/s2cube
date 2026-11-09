@@ -78,6 +78,8 @@ class LabeledBlocks(_Lazy):
             self.p = int(lf.attrs["block_px"])
             if role == "train" and ratio is not None:
                 keys = sp["subsets"][str(fold)][str(seed)][str(ratio)]
+            elif "blocks" in fd:         # strategy: patches
+                keys = fd["blocks"][role]
             else:
                 keys = sorted(json.loads(lf.attrs["block_positive_fraction"]))
                 keys = [b for b in keys if b.split(":")[0] in fd[role]]
